@@ -907,7 +907,7 @@ function generateRecommendations(profile, sessions) {
     if (price > 0 && price <= 10) { score += 10; if (price <= 5) reasons.push('budget-friendly'); }
 
     // Penalty: no sport match
-    if (!hasSport && allSports.length > 0) score = Math.floor(score * 0.4);
+    if (!hasSport && allSports.length > 0) score = Math.floor(score * 0.6);
 
     const reason = reasons.length
       ? reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1) + (reasons.length > 1 ? ' · ' + reasons.slice(1).join(' · ') : '')
@@ -932,13 +932,17 @@ function generateRecommendations(profile, sessions) {
   });
 
   scored.sort((a,b) => b.score - a.score);
+  console.log('Top 5 scored sessions:', scored.slice(0,5).map(s => ({title:s.title, score:s.score, pct:s.pct, id:s.id})));
+  console.log('Total candidates before filter:', scored.length);
 
   const seen = new Set();
   const out  = [];
   for (const r of scored) {
-    if (r.score < 40) continue;
-    if (seen.has(r.id)) continue;
-    seen.add(r.id);
+    if (r.score < 10) continue;
+    // Only deduplicate if id is non-empty
+    const key = r.id || r.title;
+    if (seen.has(key)) continue;
+    seen.add(key);
     out.push(r);
     if (out.length >= 10) break;
   }
