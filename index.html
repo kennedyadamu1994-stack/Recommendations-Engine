@@ -729,7 +729,13 @@ async function loadData(email) {
     }
 
     const recs = generateRecommendations(profile, sessions);
-    renderResults(profile, recs);
+    console.log('Recs count:', recs.length, recs.map(r => r.title));
+    try {
+      renderResults(profile, recs);
+    } catch(renderErr) {
+      console.error('renderResults crashed:', renderErr);
+      showError('Render error: ' + renderErr.message);
+    }
 
   } catch (err) {
     console.error(err);
