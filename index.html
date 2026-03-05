@@ -772,14 +772,22 @@ function parsePrice(val) {
 
 function isActiveSession(s) {
   const st = (s['Session Status'] || '').toLowerCase();
-  return !st || st === 'active' || st === 'true' || st === 'yes' || st === '1';
+  return !['cancelled','canceled','inactive','hidden','draft','closed'].includes(st);
 }
 
 function isFutureSession(s) {
   const d = s['Date'];
   if (!d) return true;
   try {
-    const dt = new Date(d);
+    let dt;
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+      const parts = d.split('/');
+      const a = parseInt(parts[0]), b = parseInt(parts[1]), yr = parseInt(parts[2]);
+      // If first part > 12, must be DD/MM/YYYY; otherwise assume M/D/YYYY (sheet format)
+      dt = a > 12 ? new Date(yr, b - 1, a) : new Date(yr, a - 1, b);
+    } else {
+      dt = new Date(d);
+    }
     const today = new Date(); today.setHours(0,0,0,0);
     return dt >= today;
   } catch { return true; }
