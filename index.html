@@ -617,11 +617,12 @@
 <script>
 // ── CONFIG ──
 const SHEET_ID       = '1v2ve0B1MWKQPu0CRIgl4jhtHRk88MoEA04T6IfhPE_o';
+const API_KEY        = 'AIzaSyCPWR_v_6xWw5IzvzHVTV0HgnjGJzv7nNc';
 const ONBOARDING_TAB = 'Onboarding Database';
 const SESSIONS_TAB   = 'Core Sessions';
 
 function sheetUrl(tab) {
-  return `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(tab)}`;
+  return `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab)}?key=${API_KEY}`;
 }
 
 // ── STATE ──
@@ -692,16 +693,29 @@ function showResults(email) {
 }
 
 // ── DATA ──
+function rowsToObjects(rows) {
+  if (!rows || rows.length < 2) return [];
+  const headers = rows[0].map(h => (h || '').toString().trim());
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (row[i] || '').toString().trim(); });
+    return obj;
+  });
+}
+
 async function loadData(email) {
   document.getElementById('stateLoading').style.display  = 'flex';
   document.getElementById('stateError').style.display    = 'none';
   document.getElementById('resultsBody').style.display   = 'none';
 
   try {
-    const [users, sessions] = await Promise.all([
-      fetch(sheetUrl(ONBOARDING_TAB)).then(r => { if (!r.ok) throw new Error('Could not load user data'); return r.json(); }),
-      fetch(sheetUrl(SESSIONS_TAB)).then(r => { if (!r.ok) throw new Error('Could not load sessions'); return r.json(); }),
+    const [usersRaw, sessionsRaw] = await Promise.all([
+      fetch(sheetUrl(ONBOARDING_TAB)).then(r => { if (!r.ok) throw new Error('Could not load user data: ' + r.status); return r.json(); }),
+      fetch(sheetUrl(SESSIONS_TAB)).then(r => { if (!r.ok) throw new Error('Could not load sessions: ' + r.status); return r.json(); }),
     ]);
+
+    const users    = rowsToObjects(usersRaw.values    || []);
+    const sessions = rowsToObjects(sessionsRaw.values || []);
 
     const normalised = email.toLowerCase().trim();
     const profile = users.find(u => {
