@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Sessions — The NBRH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #1B1B1B;
+      --surface:    rgba(255,255,255,0.04);
+      --border:     rgba(255,255,255,0.08);
+      --border-hot: rgba(255,27,110,0.3);
+      --pink:       #FF1B6E;
+      --pink-dim:   rgba(255,27,110,0.12);
+      --text:       #F2F2F2;
+      --muted:      rgba(242,242,242,0.5);
+      --faint:      rgba(242,242,242,0.25);
+      --amber:      #f59e0b;
+      --radius:     3px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content:'';
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(255,27,110,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 85% 100%, rgba(255,27,110,0.04) 0%, transparent 55%);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .view { display:none; position:relative; z-index:1; }
+    .view.active { display:block; }
+
+    /* ── LOGIN ── */
+    #view-login {
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .login-wrap {
+      width:100%;
+      max-width:420px;
+      animation: rise 0.55s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    .login-logo {
+      text-align:center;
+      margin-bottom:40px;
+    }
+
+    .login-logo img {
+      height:40px;
+      width:auto;
+      display:block;
+      margin:0 auto 24px;
+    }
+
+    .login-logo h1 {
+      font-family:'Young Serif', serif;
+      font-size:26px;
+      font-weight:400;
+      line-height:1.3;
+      letter-spacing:-0.3px;
+    }
+
+    .login-logo h1 em { color:var(--pink); font-style:normal; }
+
+    .login-logo p {
+      margin-top:8px;
+      font-size:13px;
+      color:var(--muted);
+      font-weight:300;
+    }
+
+    .login-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:40px 36px;
+      backdrop-filter:blur(24px);
+    }
+
+    .field-label {
+      display:block;
+      font-size:11px;
+      font-weight:500;
+      letter-spacing:0.9px;
+      text-transform:uppercase;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+
+    .field-input {
+      width:100%;
+      background:rgba(255,255,255,0.05);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:13px 16px;
+      font-size:15px;
+      font-family:'DM Sans', sans-serif;
+      color:var(--text);
+      outline:none;
+      transition:border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .field-input::placeholder { color:var(--faint); }
+
+    .field-input:focus {
+      border-color:var(--border-hot);
+      background:rgba(255,255,255,0.08);
+      box-shadow:0 0 0 3px var(--pink-dim);
+    }
+
+    .field-error {
+      font-size:12px;
+      color:#ff6b6b;
+      margin-top:7px;
+      display:none;
+    }
+    .field-error.show { display:block; }
+    .field-group { margin-bottom:24px; }
+
+    .btn-main {
+      width:100%;
+      padding:14px 20px;
+      background:var(--pink);
+      color:#fff;
+      border:none;
+      border-radius:var(--radius);
+      font-size:14px;
+      font-family:'DM Sans', sans-serif;
+      font-weight:500;
+      cursor:pointer;
+      transition:background 0.2s, transform 0.15s, box-shadow 0.2s;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .btn-main:hover:not(:disabled) {
+      background:#d9155d;
+      transform:translateY(-1px);
+      box-shadow:0 10px 28px rgba(255,27,110,0.28);
+    }
+
+    .btn-main:disabled {
+      background:rgba(255,255,255,0.1);
+      color:rgba(255,255,255,0.3);
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .spinner-sm {
+      width:15px; height:15px;
+      border:2px solid rgba(255,255,255,0.25);
+      border-top-color:#fff;
+      border-radius:50%;
+      animation:spin 0.65s linear infinite;
+      display:none;
+    }
+
+    .btn-main.loading .btn-label { display:none; }
+    .btn-main.loading .spinner-sm { display:block; }
+
+    /* ── RESULTS ── */
+    #view-results { min-height:100vh; }
+
+    .r-header {
+      position:sticky;
+      top:0;
+      z-index:100;
+      background:rgba(27,27,27,0.9);
+      backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
+    }
+
+    .r-header-inner {
+      max-width:860px;
+      margin:0 auto;
+      padding:0 24px;
+      height:60px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .r-header img { height:28px; width:auto; display:block; }
+
+    .r-header-name {
+      font-family:'Young Serif', serif;
+      font-size:15px;
+      font-weight:400;
+      color:var(--muted);
+      flex:1;
+      text-align:center;
+    }
+
+    .r-header-name strong { color:var(--pink); }
+
+    .btn-signout {
+      background:none;
+      border:1px solid var(--border);
+      color:var(--faint);
+      font-size:11px;
+      font-family:'DM Sans', sans-serif;
+      font-weight:500;
+      letter-spacing:0.5px;
+      text-transform:uppercase;
+      padding:6px 12px;
+      border-radius:var(--radius);
+      cursor:pointer;
+      transition:all 0.2s;
+      white-space:nowrap;
+    }
+
+    .btn-signout:hover { border-color:var(--border-hot); color:var(--pink); }
+
+    .r-body {
+      max-width:860px;
+      margin:0 auto;
+      padding:52px 24px 100px;
+    }
+
+    .state-panel {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:100px 24px;
+      text-align:center;
+    }
+
+    .state-spinner {
+      width:32px; height:32px;
+      border:2px solid rgba(255,255,255,0.06);
+      border-top-color:var(--pink);
+      border-radius:50%;
+      animation:spin 0.75s linear infinite;
+      margin-bottom:20px;
+    }
+
+    .state-panel p { color:var(--muted); font-size:14px; font-weight:300; }
+    .state-panel h2 {
+      font-family:'Young Serif', serif;
+      font-size:22px;
+      font-weight:400;
+      color:var(--pink);
+      margin-bottom:10px;
+    }
+
+    .btn-retry {
+      margin-top:20px;
+      background:var(--pink);
+      color:#fff;
+      border:none;
+      padding:11px 24px;
+      border-radius:var(--radius);
+      font-size:13px;
+      font-family:'DM Sans', sans-serif;
+      font-weight:500;
+      cursor:pointer;
+      transition:all 0.2s;
+    }
+
+    .btn-retry:hover { background:#d9155d; transform:translateY(-1px); }
+
+    /* Profile bar */
+    .profile-bar {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:6px 0;
+      margin-bottom:44px;
+      padding:16px 20px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      animation:rise 0.4s 0.05s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    .pbar-item {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:0 16px;
+      border-right:1px solid var(--border);
+    }
+
+    .pbar-item:first-child { padding-left:0; }
+    .pbar-item:last-child { border-right:none; }
+
+    .pbar-label {
+      font-size:10px;
+      font-weight:500;
+      letter-spacing:0.8px;
+      text-transform:uppercase;
+      color:var(--faint);
+    }
+
+    .pbar-value { font-size:13px; color:var(--text); }
+
+    .section-head {
+      text-align:center;
+      margin-bottom:36px;
+      animation:rise 0.4s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    .section-head h2 {
+      font-family:'Young Serif', serif;
+      font-size:32px;
+      font-weight:400;
+      letter-spacing:-0.5px;
+      margin-bottom:6px;
+    }
+
+    .section-head p { font-size:13px; color:var(--muted); font-weight:300; }
+
+    /* Rec cards */
+    .rec-list { display:flex; flex-direction:column; gap:10px; }
+
+    .rec-card {
+      display:flex;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      text-decoration:none;
+      color:inherit;
+      transition:border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      animation:rise 0.45s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    .rec-card:hover {
+      border-color:var(--border-hot);
+      transform:translateX(4px);
+      box-shadow:-4px 0 0 var(--pink), 0 8px 32px rgba(255,27,110,0.1);
+    }
+
+    .rc-rank {
+      flex-shrink:0;
+      width:42px;
+      background:var(--pink-dim);
+      border-right:1px solid rgba(255,27,110,0.1);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .rc-rank-n {
+      font-family:'Young Serif', serif;
+      font-size:20px;
+      color:var(--pink);
+      line-height:1;
+    }
+
+    .rc-img {
+      flex-shrink:0;
+      width:110px;
+      overflow:hidden;
+      background:linear-gradient(135deg, rgba(255,27,110,0.1), rgba(255,27,110,0.03));
+    }
+
+    .rc-img img {
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+      transition:transform 0.4s;
+    }
+
+    .rec-card:hover .rc-img img { transform:scale(1.04); }
+
+    .rc-img-placeholder {
+      width:100%; height:100%;
+      min-height:90px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:28px;
+      opacity:0.4;
+    }
+
+    .rc-body {
+      flex:1;
+      min-width:0;
+      padding:16px 20px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .rc-top {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .rc-title {
+      font-family:'Young Serif', serif;
+      font-size:17px;
+      font-weight:400;
+      letter-spacing:-0.2px;
+      line-height:1.3;
+    }
+
+    .rc-right {
+      flex-shrink:0;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:3px;
+    }
+
+    .rc-match {
+      display:flex;
+      align-items:baseline;
+      gap:2px;
+      line-height:1;
+    }
+
+    .rc-match-pct {
+      font-family:'Young Serif', serif;
+      font-size:24px;
+      letter-spacing:-0.5px;
+    }
+
+    .rc-match-tag {
+      font-size:10px;
+      font-weight:500;
+      letter-spacing:0.5px;
+      text-transform:uppercase;
+      color:var(--faint);
+    }
+
+    .rc-price {
+      font-family:'Young Serif', serif;
+      font-size:15px;
+      color:var(--pink);
+    }
+
+    .rc-spots { font-size:11px; color:var(--amber); }
+
+    .rc-meta {
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px 12px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:300;
+    }
+
+    .rc-meta-item { display:flex; align-items:center; gap:4px; }
+
+    .rc-reason {
+      font-size:11px;
+      color:var(--pink);
+      opacity:0.75;
+      font-weight:400;
+    }
+
+    .rec-card:nth-child(1)  { animation-delay:0.05s; }
+    .rec-card:nth-child(2)  { animation-delay:0.10s; }
+    .rec-card:nth-child(3)  { animation-delay:0.15s; }
+    .rec-card:nth-child(4)  { animation-delay:0.20s; }
+    .rec-card:nth-child(5)  { animation-delay:0.25s; }
+    .rec-card:nth-child(6)  { animation-delay:0.30s; }
+    .rec-card:nth-child(7)  { animation-delay:0.35s; }
+    .rec-card:nth-child(8)  { animation-delay:0.40s; }
+    .rec-card:nth-child(9)  { animation-delay:0.45s; }
+    .rec-card:nth-child(10) { animation-delay:0.50s; }
+
+    .empty-state {
+      text-align:center;
+      padding:64px 20px;
+      color:var(--muted);
+    }
+
+    .empty-state h3 {
+      font-family:'Young Serif', serif;
+      font-size:20px;
+      font-weight:400;
+      margin-bottom:8px;
+      color:rgba(242,242,242,0.6);
+    }
+
+    .r-footer {
+      margin-top:60px;
+      padding-top:32px;
+      border-top:1px solid var(--border);
+      text-align:center;
+    }
+
+    .r-footer a {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:var(--pink);
+      color:#fff;
+      text-decoration:none;
+      padding:13px 28px;
+      border-radius:var(--radius);
+      font-size:13px;
+      font-family:'DM Sans', sans-serif;
+      font-weight:500;
+      transition:all 0.2s;
+    }
+
+    .r-footer a:hover {
+      background:#d9155d;
+      transform:translateY(-1px);
+      box-shadow:0 10px 28px rgba(255,27,110,0.28);
+    }
+
+    .r-footer p { margin-top:14px; font-size:12px; color:var(--faint); font-weight:300; }
+
+    @keyframes rise {
+      from { opacity:0; transform:translateY(18px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width:580px) {
+      .login-card { padding:32px 24px; }
+      .rc-img { width:80px; }
+      .rc-body { padding:12px 14px; gap:8px; }
+      .rc-title { font-size:15px; }
+      .rc-match-pct { font-size:20px; }
+      .r-body { padding:32px 16px 80px; }
+      .section-head h2 { font-size:26px; }
+      .pbar-item { padding:0 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="view-login" class="view active">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <img src="https://images.squarespace-cdn.com/content/6718416feaa24175e29324d4/9d6e6464-e1e5-4dde-9ae0-03df420cbd77/NBRH+Logo.png?content-type=image%2Fpng" alt="The NBRH" />
+      <h1>Sessions picked <em>for you</em></h1>
+      <p>Enter your email to see your personalised picks</p>
+    </div>
+    <div class="login-card">
+      <div class="field-group">
+        <label class="field-label" for="emailInput">Email address</label>
+        <input type="email" id="emailInput" class="field-input" placeholder="you@example.com" autocomplete="email" />
+        <div class="field-error" id="loginError">Please enter a valid email address.</div>
+      </div>
+      <button class="btn-main" id="loginBtn" onclick="handleLogin()">
+        <span class="btn-label">Show my recommendations →</span>
+        <div class="spinner-sm"></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="view-results" class="view">
+  <header class="r-header">
+    <div class="r-header-inner">
+      <a href="https://www.thenbrh.co.uk/" target="_blank" rel="noopener">
+        <img src="https://images.squarespace-cdn.com/content/6718416feaa24175e29324d4/9d6e6464-e1e5-4dde-9ae0-03df420cbd77/NBRH+Logo.png?content-type=image%2Fpng" alt="The NBRH" />
+      </a>
+      <p class="r-header-name" id="headerName">Loading…</p>
+      <button class="btn-signout" onclick="handleSignOut()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="state-panel" id="stateLoading">
+    <div class="state-spinner"></div>
+    <p>Finding the best sessions for you…</p>
+  </div>
+
+  <div class="state-panel" id="stateError" style="display:none;">
+    <h2>Something went wrong</h2>
+    <p id="errorMsg">We couldn't load your recommendations.</p>
+    <button class="btn-retry" onclick="retryLoad()">Try again</button>
+  </div>
+
+  <div class="r-body" id="resultsBody" style="display:none;">
+    <div class="profile-bar" id="profileBar"></div>
+    <div class="section-head">
+      <h2>Your top sessions</h2>
+      <p id="resultsSubtitle">Ranked by how well they match your preferences</p>
+    </div>
+    <div class="rec-list" id="recList"></div>
+    <div class="r-footer">
+      <a href="https://www.thenbrh.co.uk/" target="_blank" rel="noopener">Browse all sessions on The NBRH →</a>
+      <p>Recommendations refresh as new sessions are added</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const SHEET_ID       = '1v2ve0B1MWKQPu0CRIgl4jhtHRk88MoEA04T6IfhPE_o';
+const ONBOARDING_TAB = 'Onboarding Database';
+const SESSIONS_TAB   = 'Core Sessions';
+
+function sheetUrl(tab) {
+  return `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(tab)}`;
+}
+
+// ── STATE ──
+let currentEmail = null;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  const stored = localStorage.getItem('nbrhRecsEmail');
+  if (stored) {
+    currentEmail = stored;
+    showResults(stored);
+  }
+  document.getElementById('emailInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+  document.getElementById('emailInput').addEventListener('input', () => {
+    document.getElementById('loginError').classList.remove('show');
+  });
+});
+
+// ── AUTH ──
+function handleLogin() {
+  const val   = document.getElementById('emailInput').value.trim().toLowerCase();
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('loginBtn');
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  currentEmail = val;
+  localStorage.setItem('nbrhRecsEmail', val);
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    showResults(val);
+  }, 300);
+}
+
+function handleSignOut() {
+  localStorage.removeItem('nbrhRecsEmail');
+  currentEmail = null;
+  document.getElementById('emailInput').value = '';
+  switchView('view-login');
+}
+
+function retryLoad() {
+  if (currentEmail) loadData(currentEmail);
+}
+
+// ── VIEWS ──
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showResults(email) {
+  document.getElementById('headerName').textContent = email;
+  switchView('view-results');
+  loadData(email);
+}
+
+// ── DATA ──
+async function loadData(email) {
+  document.getElementById('stateLoading').style.display  = 'flex';
+  document.getElementById('stateError').style.display    = 'none';
+  document.getElementById('resultsBody').style.display   = 'none';
+
+  try {
+    const [users, sessions] = await Promise.all([
+      fetch(sheetUrl(ONBOARDING_TAB)).then(r => { if (!r.ok) throw new Error('Could not load user data'); return r.json(); }),
+      fetch(sheetUrl(SESSIONS_TAB)).then(r => { if (!r.ok) throw new Error('Could not load sessions'); return r.json(); }),
+    ]);
+
+    const normalised = email.toLowerCase().trim();
+    const profile = users.find(u => {
+      const e = (u['Email'] || u['email'] || '').toLowerCase().trim();
+      return e === normalised;
+    });
+
+    if (!profile) {
+      showError("We couldn't find an account with that email. Make sure it matches the one you signed up with.");
+      return;
+    }
+
+    const recs = generateRecommendations(profile, sessions);
+    renderResults(profile, recs);
+
+  } catch (err) {
+    console.error(err);
+    showError(err.message || 'Something went wrong. Please try again.');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('stateLoading').style.display = 'none';
+  document.getElementById('stateError').style.display   = 'flex';
+  document.getElementById('errorMsg').textContent       = msg;
+}
+
+// ── SCORING ENGINE ──
+const LONDON_REGIONS = {
+  East:    ['Hackney','Tower Hamlets','Newham','Waltham Forest','Redbridge','Barking','Dagenham','Havering'],
+  West:    ['Hammersmith','Fulham','Ealing','Hounslow','Brent','Hillingdon','Harrow'],
+  North:   ['Camden','Islington','Haringey','Enfield','Barnet'],
+  South:   ['Lambeth','Southwark','Lewisham','Greenwich','Bromley','Croydon','Sutton','Merton'],
+  Central: ['Westminster','Kensington','Chelsea','City of London'],
+};
+
+function getBoroughRegion(b) {
+  if (!b) return null;
+  for (const [region, list] of Object.entries(LONDON_REGIONS)) {
+    if (list.some(x => b.toLowerCase().includes(x.toLowerCase()))) return region;
+  }
+  return null;
+}
+
+function parseCSV(val) {
+  if (!val) return [];
+  return val.split(',').map(v => v.trim()).filter(Boolean);
+}
+
+function parsePrice(val) {
+  if (!val) return 0;
+  return parseFloat(String(val).replace(/[£,\s]/g,'')) || 0;
+}
+
+function isActiveSession(s) {
+  const st = (s['Session Status'] || '').toLowerCase();
+  return !st || st === 'active' || st === 'true' || st === 'yes' || st === '1';
+}
+
+function isFutureSession(s) {
+  const d = s['Date'];
+  if (!d) return true;
+  try {
+    const dt = new Date(d);
+    const today = new Date(); today.setHours(0,0,0,0);
+    return dt >= today;
+  } catch { return true; }
+}
+
+function isChildSession(s) {
+  const t = `${s['Class Name']} ${s['Activity Type']} ${s['Age Group']}`.toLowerCase();
+  return ['kids','children','child','youth','junior','u16','u18','u14','under 16','under 18'].some(k => t.includes(k));
+}
+
+function sportMatches(userSport, s) {
+  if (!userSport) return false;
+  const u    = userSport.toLowerCase().trim();
+  const act  = (s['Activity Type'] || '').toLowerCase();
+  const name = (s['Class Name']    || '').toLowerCase();
+  if (u === act) return true;
+  if (u === 'football') {
+    if (['american football','flag football','australian rules','gridiron','afl'].some(c => `${act} ${name}`.includes(c))) return false;
+    return ['football','soccer','5-a-side','7-a-side','11-a-side'].some(k => act.includes(k) || name.includes(k));
+  }
+  const re = new RegExp(`\\b${u.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`, 'i');
+  return re.test(act) || re.test(name);
+}
+
+function genderCompat(s, userGender) {
+  const aud = (s['Audience'] || '').toLowerCase().trim();
+  const g   = (userGender  || '').toLowerCase().trim();
+  if (!aud || !g) return { ok:true, bonus:0 };
+  if (aud.includes('women only') || aud === 'women' || aud === 'female') {
+    if (g === 'female') return { ok:true, bonus:30, reason:"women's session" };
+    if (g === 'male')   return { ok:false, bonus:0 };
+  }
+  if (aud.includes('men only') || aud === 'men' || aud === 'male') {
+    if (g === 'male')   return { ok:true, bonus:30, reason:"men's session" };
+    if (g === 'female') return { ok:false, bonus:0 };
+  }
+  return { ok:true, bonus:0 };
+}
+
+function skillMatch(s, userLevel) {
+  if (!userLevel) return { match:false, label:'' };
+  const text = `${s['Class Name']} ${s['Difficulty Level']}`.toLowerCase();
+  const u    = userLevel.toLowerCase();
+  for (const lvl of ['beginner','intermediate','advanced','all levels','mixed ability','all abilities']) {
+    if (text.includes(lvl)) {
+      if (['all levels','mixed ability','all abilities'].includes(lvl)) return { match:true, label:lvl };
+      if (u.includes(lvl) || lvl.includes(u)) return { match:true, label:lvl };
+    }
+  }
+  return { match:false, label:'' };
+}
+
+function displayPct(raw) {
+  if (raw >= 120) return Math.round(80 + Math.min((raw-120)/140,1)*20);
+  if (raw >= 90)  return Math.round(60 + ((raw-90)/29)*19);
+  if (raw >= 60)  return Math.round(40 + ((raw-60)/29)*19);
+  if (raw >= 40)  return Math.round(25 + ((raw-40)/19)*14);
+  return Math.round(10 + Math.min(raw/39,1)*14);
+}
+
+function generateRecommendations(profile, sessions) {
+  const userBorough  = profile['Home Borough'] || '';
+  const favSport     = profile['Favourite Activity'] || '';
+  const otherSports  = parseCSV(profile['Other Activities Interested In'] || '');
+  const allSports    = [...new Set([favSport, ...otherSports].filter(Boolean))];
+  const userLevel    = profile['Experience Level'] || '';
+  const userGender   = profile['Gender'] || '';
+  const userMotivs   = parseCSV(profile['Motivations'] || '');
+  const userFormat   = profile['Session Format Preference'] || '';
+  const userRegion   = getBoroughRegion(userBorough);
+
+  const candidates = sessions.filter(s =>
+    isActiveSession(s) && isFutureSession(s) && !isChildSession(s) && genderCompat(s, userGender).ok
+  );
+
+  const scored = candidates.map(s => {
+    let score = 0;
+    const reasons = [];
+    let hasSport = false;
+
+    // 1. Sport (80pts)
+    const matched = allSports.find(sp => sportMatches(sp, s));
+    if (matched) { score += 80; hasSport = true; reasons.push(`${matched} session`); }
+
+    // 2. Location (35pts exact, 25pts region)
+    const sLoc = s['Location'] || '';
+    if (userBorough && sLoc.toLowerCase().includes(userBorough.toLowerCase())) {
+      score += 35; reasons.push(`in ${userBorough}`);
+    } else if (userRegion) {
+      const sr = getBoroughRegion(sLoc);
+      if (sr && sr === userRegion) { score += 25; reasons.push(`in ${userRegion} London`); }
+    }
+
+    // 3. Gender bonus (30pts)
+    const gc = genderCompat(s, userGender);
+    if (gc.bonus > 0 && gc.reason) { score += gc.bonus; reasons.push(gc.reason); }
+
+    // 4. Motivations (25pts)
+    if (userMotivs.length) {
+      const txt = `${s['Vibe']} ${s['Notes']} ${s['Class Name']}`.toLowerCase();
+      const hit = userMotivs.find(m => txt.includes(m.toLowerCase()));
+      if (hit) { score += 25; reasons.push(`for ${hit.toLowerCase()}`); }
+    }
+
+    // 5. Skill level (25pts)
+    const sk = skillMatch(s, userLevel);
+    if (sk.match) { score += 25; reasons.push(`${sk.label} level`); }
+
+    // 6. Session format (20pts)
+    if (userFormat) {
+      const fmt = (s['Type'] || s['Indoor/Outdoor'] || '').toLowerCase();
+      if (fmt && fmt.includes(userFormat.toLowerCase())) { score += 20; reasons.push(`${fmt} session`); }
+    }
+
+    // 7. Price bonus (10pts)
+    const price = parsePrice(s['Total Price'] || s['Base Price (£)']);
+    if (price > 0 && price <= 10) { score += 10; if (price <= 5) reasons.push('budget-friendly'); }
+
+    // Penalty: no sport match
+    if (!hasSport && allSports.length > 0) score = Math.floor(score * 0.4);
+
+    const reason = reasons.length
+      ? reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1) + (reasons.length > 1 ? ' · ' + reasons.slice(1).join(' · ') : '')
+      : 'Session in your area';
+
+    return {
+      id:        s['NBRH ID'] || s['Session ID'] || '',
+      title:     s['Class Name'] || '',
+      sport:     s['Activity Type'] || '',
+      date:      s['Date'] || '',
+      time:      s['Start Time'] || '',
+      location:  sLoc,
+      price,
+      spots:     parseInt(s['Spots Available'] || '0'),
+      bookingUrl: s['Booking URL'] || s['Website'] || '',
+      image:     s['Image URL'] || '',
+      difficulty: s['Difficulty Level'] || '',
+      score,
+      pct:       displayPct(score),
+      reason,
+    };
+  });
+
+  scored.sort((a,b) => b.score - a.score);
+
+  const seen = new Set();
+  const out  = [];
+  for (const r of scored) {
+    if (r.score < 40) continue;
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push(r);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+// ── RENDERING ──
+function fmtDate(str) {
+  if (!str) return '';
+  try { return new Date(str).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }); }
+  catch { return str; }
+}
+
+function fmtPrice(p) {
+  if (!p || p === 0) return 'Free';
+  return `£${p % 1 === 0 ? p : p.toFixed(2)}`;
+}
+
+function matchColour(pct) {
+  if (pct >= 80) return '#22c55e';
+  if (pct >= 60) return '#34d399';
+  if (pct >= 40) return '#f59e0b';
+  return '#fb923c';
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function sportEmoji(sport) {
+  const s = (sport||'').toLowerCase();
+  if (s.includes('basket'))                            return '🏀';
+  if (s.includes('football')||s.includes('soccer'))   return '⚽';
+  if (s.includes('tennis'))                            return '🎾';
+  if (s.includes('run')||s.includes('jog'))            return '🏃';
+  if (s.includes('swim'))                              return '🏊';
+  if (s.includes('yoga')||s.includes('pilates'))       return '🧘';
+  if (s.includes('box')||s.includes('kick')||s.includes('martial')) return '🥊';
+  if (s.includes('gym')||s.includes('fitness')||s.includes('hiit')) return '💪';
+  if (s.includes('cycle')||s.includes('spin'))         return '🚴';
+  if (s.includes('dance')||s.includes('zumba'))        return '💃';
+  if (s.includes('rugby'))                             return '🏉';
+  if (s.includes('cricket'))                           return '🏏';
+  if (s.includes('netball')||s.includes('volleyball')) return '🏐';
+  if (s.includes('badminton')||s.includes('squash'))   return '🏸';
+  if (s.includes('climb')||s.includes('boulder'))      return '🧗';
+  if (s.includes('ski')||s.includes('snow'))           return '⛷️';
+  return '🏃';
+}
+
+function renderResults(profile, recs) {
+  const name       = profile['Name'] || profile['First Name'] || currentEmail.split('@')[0];
+  const firstName  = name.split(' ')[0];
+
+  document.getElementById('headerName').innerHTML = `Hi <strong>${esc(firstName)}</strong> — here are your picks`;
+
+  // Profile bar
+  const borough = profile['Home Borough'] || '';
+  const sports  = [...new Set([
+    profile['Favourite Activity'] || '',
+    ...parseCSV(profile['Other Activities Interested In'] || '')
+  ].filter(Boolean))].slice(0,3);
+  const level   = profile['Experience Level'] || '';
+
+  const barParts = [];
+  if (borough) barParts.push(`<div class="pbar-item"><span class="pbar-label">Area</span><span class="pbar-value">${esc(borough)}</span></div>`);
+  if (sports.length) barParts.push(`<div class="pbar-item"><span class="pbar-label">Sports</span><span class="pbar-value">${esc(sports.join(', '))}</span></div>`);
+  if (level) barParts.push(`<div class="pbar-item"><span class="pbar-label">Level</span><span class="pbar-value">${esc(level)}</span></div>`);
+  document.getElementById('profileBar').innerHTML = barParts.join('');
+
+  document.getElementById('resultsSubtitle').textContent = recs.length
+    ? `${recs.length} session${recs.length !== 1 ? 's' : ''} matched to your preferences`
+    : 'Check back soon — more sessions are being added';
+
+  const list = document.getElementById('recList');
+
+  if (!recs.length) {
+    list.innerHTML = `<div class="empty-state"><h3>No matching sessions right now</h3><p>We'll have more sessions that match your preferences soon.</p></div>`;
+  } else {
+    list.innerHTML = recs.map((r, i) => {
+      const colour   = matchColour(r.pct);
+      const hasLink  = r.bookingUrl && r.bookingUrl !== '#';
+      const tag      = hasLink ? 'a' : 'div';
+      const href     = hasLink ? `href="${esc(r.bookingUrl)}" target="_blank" rel="noopener noreferrer"` : '';
+      const spots    = (r.spots > 0 && r.spots <= 5) ? `<span class="rc-spots">⚠️ ${r.spots} spot${r.spots===1?'':'s'} left</span>` : '';
+      const imgHtml  = r.image
+        ? `<img src="${esc(r.image)}" alt="${esc(r.title)}" loading="lazy" />`
+        : `<div class="rc-img-placeholder">${sportEmoji(r.sport)}</div>`;
+
+      return `<${tag} class="rec-card" ${href}>
+        <div class="rc-rank"><span class="rc-rank-n">${i+1}</span></div>
+        <div class="rc-img">${imgHtml}</div>
+        <div class="rc-body">
+          <div class="rc-top">
+            <h3 class="rc-title">${esc(r.title)}</h3>
+            <div class="rc-right">
+              <div class="rc-match">
+                <span class="rc-match-pct" style="color:${colour}">${r.pct}%</span>
+                <span class="rc-match-tag">&thinsp;match</span>
+              </div>
+              <span class="rc-price">${fmtPrice(r.price)}</span>
+              ${spots}
+            </div>
+          </div>
+          <div class="rc-meta">
+            ${r.sport    ? `<span class="rc-meta-item">${sportEmoji(r.sport)} ${esc(r.sport)}</span>` : ''}
+            ${r.date     ? `<span class="rc-meta-item">📅 ${fmtDate(r.date)}</span>` : ''}
+            ${r.time     ? `<span class="rc-meta-item">🕐 ${esc(r.time)}</span>` : ''}
+            ${r.location ? `<span class="rc-meta-item">📍 ${esc(r.location)}</span>` : ''}
+            ${r.difficulty ? `<span class="rc-meta-item">⚡ ${esc(r.difficulty)}</span>` : ''}
+          </div>
+          ${r.reason ? `<p class="rc-reason">${esc(r.reason)}</p>` : ''}
+        </div>
+      </${tag}>`;
+    }).join('');
+  }
+
+  document.getElementById('stateLoading').style.display = 'none';
+  document.getElementById('resultsBody').style.display  = 'block';
+}
+</script>
+</body>
+</html>
